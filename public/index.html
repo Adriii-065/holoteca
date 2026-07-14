@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Holoteca — Escaparate de cartas Pokémon</title>
+<script src="/js/theme.js"></script>
+<link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+
+<header class="topbar">
+  <a href="/" class="wordmark holo-text">Holoteca</a>
+  <div class="topbar-actions">
+    <button class="icon-toggle" data-theme-toggle aria-label="Cambiar a modo oscuro">
+      <svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+      <svg class="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    </button>
+    <button class="cart-button" id="openCart" aria-haspopup="dialog">
+      Carrito <span class="cart-count" id="cartCount">0</span>
+    </button>
+  </div>
+</header>
+
+<main class="page">
+  <section class="hero">
+    <p class="hero-eyebrow">Colección privada · piezas únicas</p>
+    <h1>Cada carta aquí ha pasado por mis manos antes que por las tuyas.</h1>
+    <p>Un escaparate de mi colección de cartas Pokémon. Lo que ves disponible es lo que hay: una sola unidad por carta, así que si te gusta, no esperes demasiado.</p>
+  </section>
+
+  <section id="grid" class="binder-grid"></section>
+  <div id="emptyState" class="empty-state" style="display:none;">
+    Aún no hay cartas a la venta. Vuelve pronto.
+  </div>
+</main>
+
+<footer class="site-footer">Holoteca · escaparate personal, no afiliado a The Pokémon Company</footer>
+
+<!-- Detalle de carta -->
+<div class="overlay" id="detailOverlay"></div>
+<div class="modal" id="detailModal" role="dialog" aria-modal="true">
+  <div class="modal-header">
+    <h2 id="detailName">Carta</h2>
+    <button class="icon-btn" id="closeDetail" aria-label="Cerrar">✕</button>
+  </div>
+  <div class="modal-body" id="detailBody"></div>
+</div>
+
+<!-- Carrito -->
+<div class="overlay" id="cartOverlay"></div>
+<aside class="drawer" id="cartDrawer" role="dialog" aria-modal="true">
+  <div class="drawer-header">
+    <h2>Tu carrito</h2>
+    <button class="icon-btn" id="closeCart" aria-label="Cerrar">✕</button>
+  </div>
+  <div class="drawer-body" id="cartItems"></div>
+  <div class="drawer-footer">
+    <div class="total-row">
+      <span>Total</span>
+      <span class="amount" id="cartTotal">0 €</span>
+    </div>
+    <button class="btn-primary" id="goCheckout" disabled>Finalizar compra</button>
+  </div>
+</aside>
+
+<!-- Checkout -->
+<div class="overlay" id="checkoutOverlay"></div>
+<div class="modal" id="checkoutModal" role="dialog" aria-modal="true">
+  <div class="modal-header">
+    <h2>Finalizar compra</h2>
+    <button class="icon-btn" id="closeCheckout" aria-label="Cerrar">✕</button>
+  </div>
+  <div class="modal-body" id="checkoutBody"></div>
+</div>
+
+<script src="/js/main.js"></script>
+</body>
+</html>

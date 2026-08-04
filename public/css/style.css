@@ -253,6 +253,10 @@ button {
   padding: 0 5px;
 }
 
+.sort-row {
+  margin: 8px 0 4px;
+}
+
 /* ---------- Binder grid ---------- */
 
 .binder-grid {
@@ -351,6 +355,13 @@ button {
   border: 1px solid rgba(22, 150, 122, 0.3);
   border-radius: 999px;
   padding: 2px 9px;
+  margin-top: 2px;
+}
+
+.pill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
   margin-top: 2px;
 }
 

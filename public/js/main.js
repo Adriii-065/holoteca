@@ -19,6 +19,8 @@ const els = {
   detailBody: document.getElementById('detailBody'),
   closeDetail: document.getElementById('closeDetail'),
 
+  sortSelect: document.getElementById('sortSelect'),
+
   checkoutOverlay: document.getElementById('checkoutOverlay'),
   checkoutModal: document.getElementById('checkoutModal'),
   checkoutBody: document.getElementById('checkoutBody'),
@@ -26,6 +28,20 @@ const els = {
 };
 
 let cardsCache = [];
+let currentSort = 'recent';
+
+function getSortedCards() {
+  const cards = [...cardsCache];
+  if (currentSort === 'price-asc') {
+    cards.sort((a, b) => a.price - b.price);
+  } else if (currentSort === 'price-desc') {
+    cards.sort((a, b) => b.price - a.price);
+  } else if (currentSort === 'views') {
+    cards.sort((a, b) => (b.views || 0) - (a.views || 0));
+  }
+  // 'recent' ya viene ordenado por fecha desde el servidor, no hace falta tocarlo.
+  return cards;
+}
 
 // ---------- Utilidades ----------
 
@@ -78,7 +94,9 @@ function renderGrid() {
   }
   els.emptyState.style.display = 'none';
 
-  cardsCache.forEach((card) => {
+  const cards = getSortedCards();
+
+  cards.forEach((card) => {
     const slot = document.createElement('article');
     slot.className = 'slot';
 
@@ -91,7 +109,11 @@ function renderGrid() {
       <div class="slot-body">
         <div class="slot-meta">${escapeHtml(card.set || '')} ${card.number ? '· ' + escapeHtml(card.number) : ''}</div>
         <h3 class="slot-name">${escapeHtml(card.name)}</h3>
-        <span class="slot-condition">${escapeHtml(card.condition)}</span>
+        <div class="pill-row">
+          <span class="slot-condition">${escapeHtml(card.productType || 'Carta individual')}</span>
+          <span class="slot-condition">${escapeHtml(card.language || 'Español')}</span>
+          <span class="slot-condition">${escapeHtml(card.condition)}</span>
+        </div>
         <div class="slot-footer">
           <span class="slot-price">${money(card.price)}</span>
           <button class="slot-add" data-add="${card.id}">Añadir</button>
@@ -116,9 +138,16 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
+els.sortSelect.addEventListener('change', () => {
+  currentSort = els.sortSelect.value;
+  renderGrid();
+});
+
 // ---------- Detalle de carta ----------
 
 function openDetail(card) {
+  fetch(`/api/cards/${card.id}/view`, { method: 'POST' }).catch(() => {});
+
   els.detailName.textContent = card.name;
   const img = card.images[0]
     ? `<img src="${card.images[0]}" alt="${escapeHtml(card.name)}">`
@@ -129,7 +158,11 @@ function openDetail(card) {
       ${img}
       <div>
         <div class="slot-meta">${escapeHtml(card.set || '')} ${card.number ? '· ' + escapeHtml(card.number) : ''}</div>
-        <span class="slot-condition">${escapeHtml(card.condition)}</span>
+        <div class="pill-row">
+          <span class="slot-condition">${escapeHtml(card.productType || 'Carta individual')}</span>
+          <span class="slot-condition">${escapeHtml(card.language || 'Español')}</span>
+          <span class="slot-condition">${escapeHtml(card.condition)}</span>
+        </div>
         <p class="slot-price" style="font-size:1.3rem;margin-top:10px;">${money(card.price)}</p>
         <p class="desc">${escapeHtml(card.description || 'Sin descripción adicional.')}</p>
         <button class="btn-primary" style="margin-top:14px;width:100%;" data-add="${card.id}">Añadir al carrito</button>

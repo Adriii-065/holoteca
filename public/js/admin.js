@@ -230,6 +230,8 @@ function startEdit(id) {
   document.getElementById('f-set').value = card.set || '';
   document.getElementById('f-number').value = card.number || '';
   document.getElementById('f-condition').value = card.condition;
+  document.getElementById('f-type').value = card.productType || 'Carta individual';
+  document.getElementById('f-language').value = card.language || 'Español';
   document.getElementById('f-description').value = card.description || '';
 
   imagesToRemove = new Set();
@@ -277,6 +279,8 @@ form.addEventListener('submit', async (e) => {
   fd.append('set', document.getElementById('f-set').value.trim());
   fd.append('number', document.getElementById('f-number').value.trim());
   fd.append('condition', document.getElementById('f-condition').value);
+  fd.append('productType', document.getElementById('f-type').value);
+  fd.append('language', document.getElementById('f-language').value);
   fd.append('description', document.getElementById('f-description').value.trim());
 
   const files = document.getElementById('f-images').files;

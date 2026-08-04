@@ -41,10 +41,13 @@ function toPublicCard(card) {
     set: card.set,
     number: card.number,
     condition: card.condition,
+    productType: card.productType || 'Carta individual',
+    language: card.language || 'Español',
     price: card.price,
     description: card.description,
     images: card.images,
-    status: card.status
+    status: card.status,
+    views: card.views || 0
   };
 }
 
@@ -68,6 +71,15 @@ router.get('/:id', async (req, res) => {
   res.json(toPublicCard(card));
 });
 
+// Suma una visita cuando alguien abre el detalle de una carta (para poder ordenar por "mas vistas").
+router.post('/:id/view', async (req, res) => {
+  await transact((data) => {
+    const card = data.cards.find((c) => c.id === req.params.id);
+    if (card) card.views = (card.views || 0) + 1;
+  });
+  res.json({ ok: true });
+});
+
 // ---------- Rutas de administracion ----------
 
 router.get('/admin/all', requireAdmin, async (req, res) => {
@@ -78,7 +90,7 @@ router.get('/admin/all', requireAdmin, async (req, res) => {
 
 router.post('/admin', requireAdmin, upload.array('images', 6), async (req, res) => {
   try {
-    const { name, set, number, condition, price, description } = req.body;
+    const { name, set, number, condition, productType, language, price, description } = req.body;
 
     if (!name || !price) {
       return res.status(400).json({ error: 'El nombre y el precio son obligatorios.' });
@@ -98,12 +110,15 @@ router.post('/admin', requireAdmin, upload.array('images', 6), async (req, res) 
         set: set || '',
         number: number || '',
         condition: condition || 'Buen estado',
+        productType: productType || 'Carta individual',
+        language: language || 'Español',
         price: priceNumber,
         description: description || '',
         images,
         status: 'available',
         createdAt: Date.now(),
-        soldAt: null
+        soldAt: null,
+        views: 0
       };
       data.cards.push(newCard);
       return newCard;
@@ -117,7 +132,7 @@ router.post('/admin', requireAdmin, upload.array('images', 6), async (req, res) 
 
 router.put('/admin/:id', requireAdmin, upload.array('images', 6), async (req, res) => {
   try {
-    const { name, set, number, condition, price, description, removeImages } = req.body;
+    const { name, set, number, condition, productType, language, price, description, removeImages } = req.body;
     const removeSet = new Set(
       removeImages ? (Array.isArray(removeImages) ? removeImages : [removeImages]) : []
     );
@@ -131,6 +146,8 @@ router.put('/admin/:id', requireAdmin, upload.array('images', 6), async (req, re
       if (set !== undefined) card.set = set;
       if (number !== undefined) card.number = number;
       if (condition !== undefined) card.condition = condition;
+      if (productType !== undefined) card.productType = productType;
+      if (language !== undefined) card.language = language;
       if (description !== undefined) card.description = description;
       if (price !== undefined) {
         const priceNumber = Number(price);

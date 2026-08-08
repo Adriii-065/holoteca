@@ -20,6 +20,7 @@ const els = {
   closeDetail: document.getElementById('closeDetail'),
 
   sortSelect: document.getElementById('sortSelect'),
+  languageFilter: document.getElementById('languageFilter'),
 
   checkoutOverlay: document.getElementById('checkoutOverlay'),
   checkoutModal: document.getElementById('checkoutModal'),
@@ -29,9 +30,15 @@ const els = {
 
 let cardsCache = [];
 let currentSort = 'recent';
+let currentLanguageFilter = 'all';
 
-function getSortedCards() {
-  const cards = [...cardsCache];
+function getVisibleCards() {
+  let cards = [...cardsCache];
+
+  if (currentLanguageFilter !== 'all') {
+    cards = cards.filter((c) => (c.language || 'Español') === currentLanguageFilter);
+  }
+
   if (currentSort === 'price-asc') {
     cards.sort((a, b) => a.price - b.price);
   } else if (currentSort === 'price-desc') {
@@ -88,13 +95,22 @@ async function loadCards() {
 
 function renderGrid() {
   els.grid.innerHTML = '';
+
   if (cardsCache.length === 0) {
+    els.emptyState.textContent = 'Aún no hay cartas a la venta. Vuelve pronto.';
     els.emptyState.style.display = 'block';
     return;
   }
-  els.emptyState.style.display = 'none';
 
-  const cards = getSortedCards();
+  const cards = getVisibleCards();
+
+  if (cards.length === 0) {
+    els.emptyState.textContent = 'No hay cartas que coincidan con ese filtro.';
+    els.emptyState.style.display = 'block';
+    return;
+  }
+
+  els.emptyState.style.display = 'none';
 
   cards.forEach((card) => {
     const slot = document.createElement('article');
@@ -140,6 +156,11 @@ function escapeHtml(str) {
 
 els.sortSelect.addEventListener('change', () => {
   currentSort = els.sortSelect.value;
+  renderGrid();
+});
+
+els.languageFilter.addEventListener('change', () => {
+  currentLanguageFilter = els.languageFilter.value;
   renderGrid();
 });
 

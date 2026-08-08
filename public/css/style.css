@@ -164,7 +164,26 @@ button {
 .topbar-actions {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.topbar-select {
+  height: 40px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--text);
+  font-size: 0.82rem;
+  font-family: var(--font-body);
+  box-shadow: 0 1px 2px rgba(27, 29, 42, 0.04);
+}
+
+.topbar-select:focus {
+  outline: 2px solid var(--holo-2);
+  outline-offset: 1px;
 }
 
 .hero {
@@ -251,10 +270,6 @@ button {
   align-items: center;
   justify-content: center;
   padding: 0 5px;
-}
-
-.sort-row {
-  margin: 8px 0 4px;
 }
 
 /* ---------- Binder grid ---------- */

@@ -16,6 +16,20 @@
       <svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
       <svg class="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
     </button>
+    <select id="sortSelect" class="topbar-select" aria-label="Ordenar por">
+      <option value="recent">Más recientes</option>
+      <option value="price-asc">Precio: menor a mayor</option>
+      <option value="price-desc">Precio: mayor a menor</option>
+      <option value="views">Más vistas</option>
+    </select>
+    <select id="languageFilter" class="topbar-select" aria-label="Filtrar por idioma">
+      <option value="all">Todos los idiomas</option>
+      <option value="Español">Español</option>
+      <option value="Inglés">Inglés</option>
+      <option value="Japonés">Japonés</option>
+      <option value="Coreano">Coreano</option>
+      <option value="Chino simplificado">Chino simplificado</option>
+    </select>
     <button class="cart-button" id="openCart" aria-haspopup="dialog">
       Carrito <span class="cart-count" id="cartCount">0</span>
     </button>

@@ -94,6 +94,7 @@ async function loadEverything() {
   renderStats();
   const settings = await fetchSettings();
   fillSettingsForm(settings);
+  await renderPendingPrices();
 }
 
 function renderStats() {
@@ -218,6 +219,10 @@ function resetForm() {
   imagesToRemove = new Set();
   submitBtn.textContent = 'Publicar carta';
   cancelEditBtn.style.display = 'none';
+  clearPokemonLink();
+  document.getElementById('f-autosync').checked = false;
+  document.getElementById('autoSyncBlock').style.display = 'none';
+  document.getElementById('f-margin').value = '';
 }
 
 function startEdit(id) {
@@ -233,6 +238,15 @@ function startEdit(id) {
   document.getElementById('f-type').value = card.productType || 'Carta individual';
   document.getElementById('f-language').value = card.language || 'Español';
   document.getElementById('f-description').value = card.description || '';
+
+  document.getElementById('f-autosync').checked = !!card.autoPriceSync;
+  document.getElementById('autoSyncBlock').style.display = card.autoPriceSync ? 'block' : 'none';
+  document.getElementById('f-margin').value = card.priceMarginPercent || 0;
+  if (card.pokemonTcgId) {
+    setPokemonLink(card.pokemonTcgId, card.pokemonTcgName || card.name);
+  } else {
+    clearPokemonLink();
+  }
 
   imagesToRemove = new Set();
   const thumbs = document.getElementById('existingThumbs');
@@ -282,6 +296,10 @@ form.addEventListener('submit', async (e) => {
   fd.append('productType', document.getElementById('f-type').value);
   fd.append('language', document.getElementById('f-language').value);
   fd.append('description', document.getElementById('f-description').value.trim());
+  fd.append('autoPriceSync', document.getElementById('f-autosync').checked ? 'true' : 'false');
+  fd.append('priceMarginPercent', document.getElementById('f-margin').value || '0');
+  fd.append('pokemonTcgId', document.getElementById('f-pokemontcg-id').value);
+  fd.append('pokemonTcgName', document.getElementById('f-pokemontcg-name').value);
 
   const files = document.getElementById('f-images').files;
   for (const file of files) fd.append('images', file);
@@ -328,6 +346,8 @@ function fillSettingsForm(settings) {
   document.getElementById('s-cloud-name').value = settings.cloudinaryCloudName || '';
   document.getElementById('s-cloud-key').value = settings.cloudinaryApiKey || '';
   document.getElementById('s-cloud-secret').value = settings.cloudinaryApiSecret || '';
+  document.getElementById('s-pokemontcg-key').value = settings.pokemonTcgApiKey || '';
+  document.getElementById('s-price-threshold').value = settings.priceAutoThresholdPercent ?? 15;
 }
 
 document.getElementById('toggleSecretVisibility').addEventListener('click', (e) => {
@@ -358,7 +378,9 @@ document.getElementById('settingsForm').addEventListener('submit', async (e) => 
     paypalSecret: document.getElementById('s-paypal-secret').value.trim(),
     cloudinaryCloudName: document.getElementById('s-cloud-name').value.trim(),
     cloudinaryApiKey: document.getElementById('s-cloud-key').value.trim(),
-    cloudinaryApiSecret: document.getElementById('s-cloud-secret').value.trim()
+    cloudinaryApiSecret: document.getElementById('s-cloud-secret').value.trim(),
+    pokemonTcgApiKey: document.getElementById('s-pokemontcg-key').value.trim(),
+    priceAutoThresholdPercent: Number(document.getElementById('s-price-threshold').value) || 15
   };
 
   try {
@@ -376,6 +398,163 @@ document.getElementById('settingsForm').addEventListener('submit', async (e) => 
     msg.innerHTML = `<div class="notice success">Ajustes guardados. Ya se están usando en la tienda.</div>`;
   } catch {
     msg.innerHTML = `<div class="notice error">No se pudo conectar con el servidor.</div>`;
+  }
+});
+
+// ---------- Vincular carta con pokemontcg.io ----------
+
+document.getElementById('f-autosync').addEventListener('change', (e) => {
+  document.getElementById('autoSyncBlock').style.display = e.target.checked ? 'block' : 'none';
+});
+
+function setPokemonLink(id, name) {
+  document.getElementById('f-pokemontcg-id').value = id;
+  document.getElementById('f-pokemontcg-name').value = name;
+  const info = document.getElementById('pokemonLinkedInfo');
+  info.style.display = 'block';
+  info.innerHTML = `
+    <div class="notice success" style="margin-bottom:0;display:flex;justify-content:space-between;align-items:center;gap:10px;">
+      <span>Vinculada con: <strong>${escapeHtml(name)}</strong></span>
+      <button type="button" class="btn-secondary" id="unlinkPokemonBtn">Quitar vínculo</button>
+    </div>
+  `;
+  document.getElementById('unlinkPokemonBtn').addEventListener('click', clearPokemonLink);
+  document.getElementById('pokemonSearchResults').innerHTML = '';
+}
+
+function clearPokemonLink() {
+  document.getElementById('f-pokemontcg-id').value = '';
+  document.getElementById('f-pokemontcg-name').value = '';
+  const info = document.getElementById('pokemonLinkedInfo');
+  info.style.display = 'none';
+  info.innerHTML = '';
+}
+
+document.getElementById('pokemonSearchBtn').addEventListener('click', async () => {
+  const q = document.getElementById('f-pokemontcg-search').value.trim();
+  const results = document.getElementById('pokemonSearchResults');
+  if (!q) return;
+
+  results.innerHTML = `<p style="color:var(--muted);font-size:0.85rem;">Buscando...</p>`;
+
+  try {
+    const res = await fetch(`/api/admin/prices/search?q=${encodeURIComponent(q)}`);
+    const data = await res.json();
+    if (!res.ok) {
+      results.innerHTML = `<div class="notice error">${escapeHtml(data.error || 'No se pudo buscar.')}</div>`;
+      return;
+    }
+    if (data.length === 0) {
+      results.innerHTML = `<p style="color:var(--muted);font-size:0.85rem;">Sin resultados. Prueba con otro nombre.</p>`;
+      return;
+    }
+
+    results.innerHTML = data
+      .map(
+        (c, i) => `
+      <div class="existing-thumb" data-i="${i}" style="display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:8px;padding:8px;margin-top:6px;cursor:pointer;width:100%;">
+        ${c.image ? `<img src="${c.image}" style="width:36px;height:50px;object-fit:cover;border-radius:4px;">` : ''}
+        <div style="flex:1;">
+          <div style="font-weight:600;font-size:0.88rem;">${escapeHtml(c.name)}</div>
+          <div style="color:var(--muted);font-size:0.78rem;">${escapeHtml(c.setName)} · #${escapeHtml(c.number)}</div>
+        </div>
+        <div style="font-family:var(--font-mono);font-size:0.85rem;color:var(--gold);">
+          ${c.marketPrice != null ? money(c.marketPrice) : 'sin precio'}
+        </div>
+      </div>
+    `
+      )
+      .join('');
+
+    results.querySelectorAll('[data-i]').forEach((el) => {
+      el.addEventListener('click', () => {
+        const c = data[Number(el.dataset.i)];
+        setPokemonLink(c.id, `${c.name} (${c.setName} #${c.number})`);
+      });
+    });
+  } catch {
+    results.innerHTML = `<div class="notice error">No se pudo conectar con el servidor.</div>`;
+  }
+});
+
+// ---------- Pestaña Precios ----------
+
+async function fetchPendingPrices() {
+  const res = await fetch('/api/admin/prices/pending');
+  return res.json();
+}
+
+async function renderPendingPrices() {
+  const pending = await fetchPendingPrices();
+  const tbody = document.getElementById('pendingPricesBody');
+
+  if (pending.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" style="color:var(--muted);">No hay cambios pendientes de revisar.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = pending
+    .map(
+      (p) => `
+    <tr>
+      <td>${escapeHtml(p.name)}</td>
+      <td>${money(p.currentPrice)}</td>
+      <td style="font-weight:600;">${money(p.pendingPrice)}</td>
+      <td style="color:var(--muted);">${money(p.pendingPriceMarket)}</td>
+      <td>
+        <div class="row-actions">
+          <button data-approve="${p.id}">Aplicar</button>
+          <button data-dismiss="${p.id}" class="danger">Descartar</button>
+        </div>
+      </td>
+    </tr>
+  `
+    )
+    .join('');
+
+  tbody.querySelectorAll('[data-approve]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      await fetch(`/api/admin/prices/${btn.dataset.approve}/approve`, { method: 'POST' });
+      await renderPendingPrices();
+      await loadEverything();
+    });
+  });
+  tbody.querySelectorAll('[data-dismiss]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      await fetch(`/api/admin/prices/${btn.dataset.dismiss}/dismiss`, { method: 'POST' });
+      await renderPendingPrices();
+    });
+  });
+}
+
+document.getElementById('runSyncBtn').addEventListener('click', async () => {
+  const btn = document.getElementById('runSyncBtn');
+  const status = document.getElementById('syncStatus');
+  const summary = document.getElementById('syncSummary');
+  btn.disabled = true;
+  status.textContent = 'Sincronizando...';
+  summary.innerHTML = '';
+
+  try {
+    const res = await fetch('/api/admin/prices/run', { method: 'POST' });
+    const data = await res.json();
+    if (!res.ok) {
+      summary.innerHTML = `<div class="notice error">${escapeHtml(data.error || 'No se pudo sincronizar.')}</div>`;
+      return;
+    }
+    status.textContent = '';
+    summary.innerHTML = `
+      <div class="notice success">
+        Revisadas ${data.checked} cartas · ${data.updated.length} actualizadas automáticamente ·
+        ${data.pending.length} pendientes de revisar ${data.failed.length ? `· ${data.failed.length} con error` : ''}
+      </div>
+    `;
+    await renderPendingPrices();
+    await loadEverything();
+  } catch {
+    summary.innerHTML = `<div class="notice error">No se pudo conectar con el servidor.</div>`;
+  } finally {
+    btn.disabled = false;
   }
 });
 

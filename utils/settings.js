@@ -10,7 +10,9 @@ const DEFAULT_SETTINGS = {
   paypalSecret: '',
   cloudinaryCloudName: '',
   cloudinaryApiKey: '',
-  cloudinaryApiSecret: ''
+  cloudinaryApiSecret: '',
+  pokemonTcgApiKey: '',
+  priceAutoThresholdPercent: 15
 };
 
 function getSettings(data) {

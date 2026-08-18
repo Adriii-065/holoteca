@@ -90,7 +90,20 @@ router.get('/admin/all', requireAdmin, async (req, res) => {
 
 router.post('/admin', requireAdmin, upload.array('images', 6), async (req, res) => {
   try {
-    const { name, set, number, condition, productType, language, price, description } = req.body;
+    const {
+      name,
+      set,
+      number,
+      condition,
+      productType,
+      language,
+      price,
+      description,
+      pokemonTcgId,
+      pokemonTcgName,
+      autoPriceSync,
+      priceMarginPercent
+    } = req.body;
 
     if (!name || !price) {
       return res.status(400).json({ error: 'El nombre y el precio son obligatorios.' });
@@ -118,7 +131,15 @@ router.post('/admin', requireAdmin, upload.array('images', 6), async (req, res) 
         status: 'available',
         createdAt: Date.now(),
         soldAt: null,
-        views: 0
+        views: 0,
+        pokemonTcgId: pokemonTcgId || '',
+        pokemonTcgName: pokemonTcgName || '',
+        autoPriceSync: autoPriceSync === 'true' || autoPriceSync === true,
+        priceMarginPercent: Number(priceMarginPercent) || 0,
+        pendingPrice: null,
+        pendingPriceMarket: null,
+        pendingPriceAt: null,
+        lastPriceSyncAt: null
       };
       data.cards.push(newCard);
       return newCard;
@@ -132,7 +153,21 @@ router.post('/admin', requireAdmin, upload.array('images', 6), async (req, res) 
 
 router.put('/admin/:id', requireAdmin, upload.array('images', 6), async (req, res) => {
   try {
-    const { name, set, number, condition, productType, language, price, description, removeImages } = req.body;
+    const {
+      name,
+      set,
+      number,
+      condition,
+      productType,
+      language,
+      price,
+      description,
+      removeImages,
+      pokemonTcgId,
+      pokemonTcgName,
+      autoPriceSync,
+      priceMarginPercent
+    } = req.body;
     const removeSet = new Set(
       removeImages ? (Array.isArray(removeImages) ? removeImages : [removeImages]) : []
     );
@@ -148,6 +183,10 @@ router.put('/admin/:id', requireAdmin, upload.array('images', 6), async (req, re
       if (condition !== undefined) card.condition = condition;
       if (productType !== undefined) card.productType = productType;
       if (language !== undefined) card.language = language;
+      if (pokemonTcgId !== undefined) card.pokemonTcgId = pokemonTcgId;
+      if (pokemonTcgName !== undefined) card.pokemonTcgName = pokemonTcgName;
+      if (autoPriceSync !== undefined) card.autoPriceSync = autoPriceSync === 'true' || autoPriceSync === true;
+      if (priceMarginPercent !== undefined) card.priceMarginPercent = Number(priceMarginPercent) || 0;
       if (description !== undefined) card.description = description;
       if (price !== undefined) {
         const priceNumber = Number(price);

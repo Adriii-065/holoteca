@@ -20,7 +20,9 @@ router.put('/', requireAdmin, async (req, res) => {
     paypalSecret,
     cloudinaryCloudName,
     cloudinaryApiKey,
-    cloudinaryApiSecret
+    cloudinaryApiSecret,
+    pokemonTcgApiKey,
+    priceAutoThresholdPercent
   } = req.body || {};
 
   const updated = await transact((data) => {
@@ -46,7 +48,13 @@ router.put('/', requireAdmin, async (req, res) => {
       cloudinaryApiSecret:
         cloudinaryApiSecret !== undefined
           ? String(cloudinaryApiSecret).trim()
-          : current.cloudinaryApiSecret
+          : current.cloudinaryApiSecret,
+      pokemonTcgApiKey:
+        pokemonTcgApiKey !== undefined ? String(pokemonTcgApiKey).trim() : current.pokemonTcgApiKey,
+      priceAutoThresholdPercent: (() => {
+        const n = Number(priceAutoThresholdPercent);
+        return Number.isFinite(n) && n >= 0 ? n : current.priceAutoThresholdPercent;
+      })()
     };
 
     return data.settings;

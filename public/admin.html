@@ -52,6 +52,7 @@
     <div class="tabs">
       <button class="tab-btn active" data-tab="cards">Cartas</button>
       <button class="tab-btn" data-tab="orders">Pedidos</button>
+      <button class="tab-btn" data-tab="prices">Precios</button>
       <button class="tab-btn" data-tab="settings">Ajustes</button>
     </div>
 
@@ -110,6 +111,30 @@
           <label for="f-description">Descripción</label>
           <textarea id="f-description" rows="3" placeholder="Detalles, filo, centrado, extras..."></textarea>
         </div>
+
+        <div class="field full" style="margin-top:6px;margin-bottom:0;border-top:1px solid var(--line);padding-top:16px;">
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.92rem;color:var(--text);">
+            <input type="checkbox" id="f-autosync" style="width:auto;" />
+            Sincronizar precio automáticamente con Cardmarket
+          </label>
+        </div>
+        <div class="field full" id="autoSyncBlock" style="display:none;">
+          <label for="f-pokemontcg-search">Buscar carta en pokemontcg.io</label>
+          <div style="display:flex;gap:8px;">
+            <input id="f-pokemontcg-search" type="text" placeholder="Nombre de la carta, ej. Charizard" style="flex:1;" />
+            <button type="button" class="btn-secondary" id="pokemonSearchBtn">Buscar</button>
+          </div>
+          <div id="pokemonSearchResults"></div>
+          <div id="pokemonLinkedInfo" style="display:none;margin-top:10px;"></div>
+          <input type="hidden" id="f-pokemontcg-id" />
+          <input type="hidden" id="f-pokemontcg-name" />
+
+          <div style="max-width:260px;margin-top:14px;">
+            <label for="f-margin">Margen % sobre precio de mercado</label>
+            <input id="f-margin" type="number" step="0.1" placeholder="0" />
+          </div>
+        </div>
+
         <div class="field full" style="display:flex;gap:10px;">
           <button type="submit" class="btn-primary" id="cardFormSubmit">Publicar carta</button>
           <button type="button" class="btn-secondary" id="cancelEdit" style="display:none;">Cancelar edición</button>
@@ -144,6 +169,33 @@
           </tr>
         </thead>
         <tbody id="ordersTableBody"></tbody>
+      </table>
+    </section>
+
+    <section class="panel-section" id="tab-prices">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap;">
+        <button class="btn-primary" id="runSyncBtn">Sincronizar precios ahora</button>
+        <span id="syncStatus" style="color:var(--muted);font-size:0.88rem;"></span>
+      </div>
+      <div id="syncSummary"></div>
+
+      <h3 style="font-family:var(--font-display);font-size:1.1rem;margin:24px 0 10px;">
+        Cambios pendientes de revisar
+      </h3>
+      <p style="color:var(--muted);font-size:0.85rem;margin:0 0 14px;">
+        Estos son cambios de precio grandes (por encima de tu umbral en Ajustes) — no se aplican solos, decides tú.
+      </p>
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Carta</th>
+            <th>Precio actual</th>
+            <th>Precio propuesto</th>
+            <th>Mercado</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="pendingPricesBody"></tbody>
       </table>
     </section>
 
@@ -210,6 +262,23 @@
             <input id="s-cloud-secret" type="password" placeholder="Desde tu panel de cloudinary.com" style="flex:1;" />
             <button type="button" class="btn-secondary" id="toggleCloudSecretVisibility">Mostrar</button>
           </div>
+        </div>
+
+        <div class="field full" style="margin-top:10px;margin-bottom:6px;">
+          <strong style="font-family:var(--font-display);font-size:1.1rem;">Sincronización de precios (Cardmarket)</strong>
+          <p style="color:var(--muted);font-size:0.82rem;margin:4px 0 0;">
+            Opcional. Sin API key funciona igualmente, con un límite diario
+            de peticiones más bajo. Si vinculas muchas cartas, pide una
+            gratis en <span style="font-family:var(--font-mono);">pokemontcg.io/dashboard</span>.
+          </p>
+        </div>
+        <div class="field">
+          <label for="s-pokemontcg-key">API Key de pokemontcg.io (opcional)</label>
+          <input id="s-pokemontcg-key" type="text" placeholder="Déjalo vacío si no tienes" />
+        </div>
+        <div class="field">
+          <label for="s-price-threshold">Umbral de cambio automático (%)</label>
+          <input id="s-price-threshold" type="number" min="0" step="1" placeholder="15" />
         </div>
 
         <div class="field full" style="display:flex;gap:10px;margin-top:6px;">

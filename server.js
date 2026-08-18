@@ -10,7 +10,9 @@ const cardRoutes = require('./routes/cards');
 const orderRoutes = require('./routes/orders');
 const adminOrderRoutes = require('./routes/adminOrders');
 const settingsRoutes = require('./routes/settings');
+const priceSyncRoutes = require('./routes/priceSync');
 const paypalRoutes = require('./routes/paypal');
+const { syncAllPrices } = require('./utils/priceSyncEngine');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -38,6 +40,7 @@ app.use('/api/cards', cardRoutes);
 app.use('/api', orderRoutes);
 app.use('/api/admin/orders', adminOrderRoutes);
 app.use('/api/admin/settings', settingsRoutes);
+app.use('/api/admin/prices', priceSyncRoutes);
 app.use('/api/paypal', paypalRoutes);
 
 app.use(express.static(path.join(__dirname, 'public')));
@@ -71,6 +74,13 @@ setInterval(() => {
     console.error('Error liberando reservas caducadas:', err);
   });
 }, 60 * 1000);
+
+// Sincroniza precios con Cardmarket una vez al dia para las cartas que lo tengan activado.
+setInterval(() => {
+  syncAllPrices().catch((err) => {
+    console.error('Error sincronizando precios:', err);
+  });
+}, 24 * 60 * 60 * 1000);
 
 app.listen(PORT, () => {
   console.log(`\nHoloteca esta lista.`);

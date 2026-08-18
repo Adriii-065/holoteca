@@ -313,3 +313,45 @@ vez de en el disco de Render, así que sobrevive a cualquier reinicio.
 - Si en algún momento crece mucho el uso y quieres que no se duerma nunca,
   eso ya es un plan de pago de Render — pero para un catálogo personal el
   plan gratis con esta configuración es más que suficiente.
+## 11. Precios automáticos (Cardmarket)
+
+Puedes hacer que el precio de una carta se actualice solo, siguiendo el
+precio de mercado de Cardmarket (a través de la API pública y gratuita de
+pokemontcg.io). Es opcional, carta por carta.
+
+**Cómo activarlo en una carta:**
+1. Al crear o editar una carta, marca la casilla **"Sincronizar precio
+   automáticamente con Cardmarket"**.
+2. Busca la carta por nombre y haz clic en el resultado correcto de la
+   lista (esto la vincula a su ficha real — importante para que el precio
+   sea el de la carta correcta y no el de otra parecida).
+3. Pon tu **margen %** sobre el precio de mercado si quieres ganar algo por
+   encima (por ejemplo, 15 = precio de mercado + 15%). Puedes dejarlo en 0
+   para usar el precio de mercado tal cual.
+4. Guarda la carta.
+
+**Cómo funciona la sincronización:**
+- Se revisa **una vez al día** sola, sin que tengas que hacer nada. También
+  puedes forzarla cuando quieras desde `/admin` → pestaña **Precios** →
+  botón **"Sincronizar precios ahora"**.
+- El precio nuevo siempre se **redondea hacia arriba al euro entero** (por
+  ejemplo, 11,20€ se convierte en 12€).
+- Si el cambio respecto al precio actual es **pequeño** (por debajo del
+  umbral que configures en Ajustes, 15% por defecto), se aplica solo, sin
+  avisarte.
+- Si el cambio es **grande** (una subida o bajada rara), **no se aplica
+  solo** — se queda como "pendiente de revisar" en la pestaña **Precios**,
+  donde ves el precio actual, el propuesto, y decides si lo aplicas o lo
+  descartas.
+- Las cartas que **no** tengan la casilla marcada nunca se tocan — sigues
+  controlando su precio tú a mano, como siempre.
+
+**Configuración (opcional)**, en `/admin` → **Ajustes** → sección
+"Sincronización de precios":
+- **API Key de pokemontcg.io**: no hace falta para que funcione, pero si
+  vinculas muchas cartas y empiezas a quedarte sin peticiones, puedes
+  pedir una gratis en pokemontcg.io/dashboard y pegarla ahí.
+- **Umbral de cambio automático (%)**: a partir de qué porcentaje de cambio
+  se considera "grande" y se queda pendiente de tu revisión en vez de
+  aplicarse solo.
+

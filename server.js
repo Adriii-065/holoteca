@@ -1,7 +1,10 @@
 require('dotenv').config();
 
+const crypto = require('crypto');
 const express = require('express');
 const session = require('express-session');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 const path = require('path');
 
 const { transact } = require('./db/store');
@@ -20,20 +23,90 @@ const PORT = process.env.PORT || 3000;
 // Necesario en cuanto la web vive detras de un proxy (Render, Railway, etc.)
 app.set('trust proxy', 1);
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Oculta que el servidor es Express (informacion que solo ayuda a atacantes).
+app.disable('x-powered-by');
+
+// Cabeceras de seguridad razonables por defecto (XSS, sniffing de tipos, clickjacking...).
+// CSP desactivada: la web carga cosas de varios sitios (fuentes, PayPal, imagenes de
+// Cloudinary/pokemontcg.io) y una CSP mal ajustada rompe la pagina en vez de protegerla.
+app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
+
+app.use(express.json({ limit: '2mb' }));
+app.use(express.urlencoded({ extended: true, limit: '2mb' }));
+
+// La sesion NUNCA debe usar un secreto conocido/publico. Si no has puesto el tuyo
+// en .env, generamos uno aleatorio en cada arranque (mejor que un valor fijo que
+// cualquiera que vea este codigo tambien conoce), pero eso significa que las
+// sesiones no sobreviven a un reinicio hasta que configures tu propio SESSION_SECRET.
+let sessionSecret = process.env.SESSION_SECRET;
+if (!sessionSecret) {
+  sessionSecret = crypto.randomBytes(32).toString('hex');
+  console.warn(
+    '\n⚠️  No has configurado SESSION_SECRET en tu .env. Se ha generado uno aleatorio ' +
+      'solo para este arranque (los admins tendran que volver a iniciar sesion cada ' +
+      'vez que el servidor se reinicie). Pon tu propio SESSION_SECRET en .env cuanto antes.\n'
+  );
+}
+
+// Si hay MongoDB configurado, guardamos las sesiones ahi (sobreviven a reinicios y
+// no se pierden en cada "sueño" del plan gratis de Render). Sin Mongo, usa la
+// memoria del proceso, que es suficiente para trabajar en local.
+let sessionStore;
+if (process.env.MONGODB_URI) {
+  const MongoStore = require('connect-mongo');
+  sessionStore = MongoStore.create({
+    mongoUrl: process.env.MONGODB_URI,
+    dbName: process.env.MONGODB_DB || 'holoteca',
+    collectionName: 'sessions',
+    ttl: 60 * 60 * 8 // 8 horas, igual que la cookie
+  });
+}
 
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || 'cambia-esto-en-tu-.env',
+    secret: sessionSecret,
+    store: sessionStore,
     resave: false,
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
       maxAge: 1000 * 60 * 60 * 8 // 8 horas
     }
   })
 );
+
+// Limite general para toda la API, como red de seguridad ante abusos que no
+// hayamos previsto (ademas de los limites mas estrictos de login y checkout).
+const generalApiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 120,
+  standardHeaders: true,
+  legacyHeaders: false
+});
+app.use('/api', generalApiLimiter);
+
+// Limita los intentos de login para dificultar los ataques de fuerza bruta contra tu admin.
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Demasiados intentos de inicio de sesion. Espera unos minutos y vuelve a intentarlo.' }
+});
+app.use('/api/admin/login', loginLimiter);
+
+// Limita cuantos pedidos se pueden crear seguido, para que nadie pueda "secuestrar"
+// todo el catalogo reservando todas las cartas sin llegar a pagar nunca.
+const checkoutLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000, // 10 minutos
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Demasiados intentos de compra seguidos. Espera unos minutos y vuelve a intentarlo.' }
+});
+app.use('/api/checkout', checkoutLimiter);
 
 app.use('/api/admin', authRoutes);
 app.use('/api/cards', cardRoutes);

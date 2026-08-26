@@ -1,7 +1,12 @@
 const express = require('express');
-const { verifyPassword } = require('../utils/password');
+const { verifyPassword, hashPassword } = require('../utils/password');
 
 const router = express.Router();
+
+// Hash "señuelo" para comparar contra el si el usuario no existe, y que
+// responder tarde lo mismo tanto si el usuario esta bien como si esta mal
+// (si no, el tiempo de respuesta delataria si el usuario era correcto).
+const DECOY_HASH = hashPassword(require('crypto').randomBytes(16).toString('hex'));
 
 router.post('/login', (req, res) => {
   const { username, password } = req.body || {};
@@ -20,7 +25,9 @@ router.post('/login', (req, res) => {
   }
 
   const userOk = username === expectedUser;
-  const passOk = userOk && verifyPassword(password, expectedHash);
+  // Siempre se ejecuta la comparacion de contrasena, exista o no el usuario,
+  // para que el tiempo de respuesta no delate si el usuario era correcto.
+  const passOk = verifyPassword(password, userOk ? expectedHash : DECOY_HASH);
 
   if (!userOk || !passOk) {
     return res.status(401).json({ error: 'Usuario o contrasena incorrectos.' });

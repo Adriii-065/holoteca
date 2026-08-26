@@ -37,9 +37,16 @@ router.post('/checkout', async (req, res) => {
   if (!buyerName || !buyerContact) {
     return res.status(400).json({ error: 'Indica tu nombre y un contacto (email o telefono).' });
   }
+  if (String(buyerName).length > 120 || String(buyerContact).length > 200) {
+    return res.status(400).json({ error: 'El nombre o el contacto son demasiado largos.' });
+  }
   if (!['bizum', 'paypal'].includes(method)) {
     return res.status(400).json({ error: 'Metodo de pago no valido.' });
   }
+
+  // Quita duplicados y pone un tope: evita que un carrito manipulado reserve
+  // el catalogo entero de golpe sin llegar a pagar nunca.
+  const uniqueCardIds = [...new Set(cardIds)].slice(0, 30);
 
   try {
     const { order, settings } = await transact((data) => {
@@ -52,7 +59,7 @@ router.post('/checkout', async (req, res) => {
         throw new Error('El vendedor todavia no ha configurado PayPal. Prueba con Bizum o vuelve mas tarde.');
       }
 
-      const cards = cardIds.map((id) => data.cards.find((c) => c.id === id));
+      const cards = uniqueCardIds.map((id) => data.cards.find((c) => c.id === id));
       const missing = cards.some((c) => !c || c.status !== 'available');
       if (missing) {
         throw new Error('Alguna carta del carrito ya no esta disponible. Actualiza la pagina.');

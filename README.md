@@ -355,3 +355,55 @@ pokemontcg.io). Es opcional, carta por carta.
   se considera "grande" y se queda pendiente de tu revisión en vez de
   aplicarse solo.
 
+
+## 12. Seguridad
+
+Se ha hecho una revisión de seguridad completa del proyecto. Esto es lo que
+se ha reforzado (no tienes que hacer nada para que funcione, ya viene
+aplicado en el código):
+
+- **Cabeceras de seguridad** (con la librería `helmet`): protegen contra
+  varios ataques comunes del navegador (clickjacking, sniffing de tipos de
+  archivo, etc.).
+- **Límite de intentos de login**: como mucho 10 intentos cada 15 minutos
+  por dirección, para dificultar que alguien intente adivinar tu
+  contraseña de admin a base de probar miles de veces.
+- **Límite de compras seguidas**: para que nadie pueda "reservar" todo tu
+  catálogo de golpe sin llegar a pagar nunca y bloquear tu tienda.
+- **Sesión más segura**: la cookie de admin ahora viaja marcada para
+  enviarse solo por HTTPS en producción, y con protección adicional contra
+  ataques cruzados entre webs (CSRF).
+- **Sin secreto de sesión conocido**: antes, si se te olvidaba poner tu
+  propio `SESSION_SECRET`, la web usaba uno de repuesto que cualquiera
+  podía ver en el código. Ahora, si no lo has puesto, se genera uno
+  aleatorio en cada arranque (mejor avisarte con un aviso en la terminal
+  que dejar una puerta conocida abierta).
+- **Sesiones que sobreviven a reinicios**: si tienes `MONGODB_URI`
+  configurado, las sesiones de admin se guardan ahí en vez de en la
+  memoria del servidor, así no tienes que volver a iniciar sesión cada vez
+  que Render reinicia la web.
+- **Comprobación de que el usuario existe no se nota por la velocidad de
+  respuesta** del login (un detalle técnico que evita una vía sutil de
+  adivinar el usuario correcto).
+- **Límites de tamaño** en los campos de texto y en las peticiones, para
+  evitar abusos de almacenamiento.
+
+### Lo que tienes que revisar tú (una sola vez)
+
+1. **En Render**, añade esta variable de entorno nueva junto a las que ya
+   tenías:
+   - `NODE_ENV` = `production`
+2. Confirma que tu repositorio de GitHub está en **Private** (no público),
+   en la configuración del repositorio en github.com.
+3. De vez en cuando (cada pocos meses), en la terminal de VS Code dentro de
+   tu proyecto, ejecuta:
+   ```
+   npm audit
+   ```
+   Esto avisa si alguna de las librerías que usa el proyecto ha recibido un
+   aviso de seguridad desde que la instalaste. Si te sale algo, pégamelo
+   aquí y lo revisamos.
+
+Como siempre: tus cartas, pedidos y fotos no se ven afectados por nada de
+esto — solo se ha reforzado cómo se protege el acceso y el propio
+servidor.

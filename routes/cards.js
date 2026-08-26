@@ -108,9 +108,17 @@ router.post('/admin', requireAdmin, upload.array('images', 6), async (req, res) 
     if (!name || !price) {
       return res.status(400).json({ error: 'El nombre y el precio son obligatorios.' });
     }
+    if (
+      String(name).length > 150 ||
+      String(description || '').length > 4000 ||
+      String(set || '').length > 100 ||
+      String(number || '').length > 30
+    ) {
+      return res.status(400).json({ error: 'Alguno de los campos de texto es demasiado largo.' });
+    }
 
     const priceNumber = Number(price);
-    if (Number.isNaN(priceNumber) || priceNumber <= 0) {
+    if (Number.isNaN(priceNumber) || priceNumber <= 0 || priceNumber > 1000000) {
       return res.status(400).json({ error: 'El precio tiene que ser un numero mayor que 0.' });
     }
 
